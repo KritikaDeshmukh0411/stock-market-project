@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Market Analysis</title>
+    <style>
+        body {
+            background-color: #0A0A23;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .stocks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .stock-btn {
+            background-color: navy;
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            width: 120px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .green { color: lightgreen; }
+        .red { color: red; }
+        .chart-container {
+            background-color: #07071A;
+            padding: 10px;
+            border-radius: 5px;
+            width: 650px;
+        }
+        .timeframe-btns {
+            margin-top: 10px;
+        }
+        .timeframe-btns button {
+            background-color: navy;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        #summary {
+            margin-top: 10px;
+            font-size: 14px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Stock Market Analysis</h1>
+    <div class="container">
+        <!-- Stocks List -->
+        <div class="stocks-list" id="stocksList"></div>
+
+        <!-- Stock Chart -->
+        <div class="chart-container">
+            <canvas id="stockChart" width="600" height="300"></canvas>
+            <div id="summary"></div>
+            <div class="timeframe-btns">
+                <button onclick="updateChart('1M')">1 Month</button>
+                <button onclick="updateChart('3M')">3 Month</button>
+                <button onclick="updateChart('1Y')">1 Year</button>
+                <button onclick="updateChart('5Y')">5 Years</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const stocks = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'PYPL', 'TSLA', 'JPM', 'NVDA', 'NFLX', 'DIS'];
+        const apiBase = "https://stocksapi-uhe1.onrender.com/api/stocks";
+
+        let selectedStock = 'AAPL'; // Default stock
+        let selectedTimeframe = '1M'; // Default timeframe
+
+        async function fetchStockData(stock) {
+            const res = await fetch(`${apiBase}/getstocksdata?symbol=${stock}`);
+            const data = await res.json();
+            return data[selectedTimeframe] || [];
+        }
+
+        async function fetchStockProfile(stock) {
+            const res = await fetch(`${apiBase}/getstocksprofiledata?symbol=${stock}`);
+            return res.json();
+        }
+
+        async function fetchStockSummary(stock) {
+            const res = await fetch(`${apiBase}/getstockstatsdata?symbol=${stock}`);
+            return res.json();
+        }
+
+        async function loadStocks() {
+            const stocksList = document.getElementById('stocksList');
+            stocksList.innerHTML = "";
+
+            for (let stock of stocks) {
+                const data = await fetchStockSummary(stock);
+                const price = data.price || 0;
+                const change = data.change || 0;
+                const changeClass = change >= 0 ? 'green' : 'red';
+
+                const btn = document.createElement("button");
+                btn.classList.add("stock-btn");
+                btn.innerHTML = `${stock} <span class="${changeClass}">$${price.toFixed(2)} (${change.toFixed(2)}%)</span>`;
+                btn.onclick = () => updateStock(stock);
+                stocksList.appendChild(btn);
+            }
+        }
+
+        async function updateStock(stock) {
+            selectedStock = stock;
+            await updateSummary();
+            await updateChart(selectedTimeframe);
+        }
+
+        async function updateSummary() {
+            const summary = await fetchStockProfile(selectedStock);
+            const stats = await fetchStockSummary(selectedStock);
+
+            document.getElementById("summary").innerHTML = `
+                <strong>${summary.companyName || selectedStock}</strong><br>
+                Market Cap: $${(stats.marketCap / 1e9).toFixed(2)}B <br>
+                P/E Ratio: ${stats.peRatio || 'N/A'}
+            `;
+        }
+
+        async function updateChart(timeframe) {
+            selectedTimeframe = timeframe;
+            const prices = await fetchStockData(selectedStock);
+
+            const canvas = document.getElementById("stockChart");
+            const ctx = canvas.getContext("2d");
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = "lime";
+            ctx.lineWidth = 2;
+
+            if (prices.length === 0) return;
+
+            const maxPrice = Math.max(...prices);
+            const minPrice = Math.min(...prices);
+
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height - ((prices[0] - minPrice) / (maxPrice - minPrice)) * canvas.height);
+
+            for (let i = 1; i < prices.length; i++) {
+                let x = (i / prices.length) * canvas.width;
+                let y = canvas.height - ((prices[i] - minPrice) / (maxPrice - minPrice)) * canvas.height;
+                ctx.lineTo(x, y);
+            }
+
+            ctx.stroke();
+        }
+
+        loadStocks();
+        updateStock('AAPL');
+
+    </script>
+</body>
+</html>

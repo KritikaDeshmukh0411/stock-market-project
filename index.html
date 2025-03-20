@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Market Analysis</title>
+    <link rel="stylesheet" href="styleForIndex.css">
+</head>
+<body>
+
+    <h1>Stock Market Analysis</h1>
+    <div class="container">
+        
+
+        <!-- Stock Chart -->
+        <div class="chart-container">
+            <canvas id="stockChart" width="600" height="300"></canvas>
+            <div id="summary"></div>
+            <div class="timeframe-btns">
+                <button onclick="updateChart('1M')">1 Month</button>
+                <button onclick="updateChart('3M')">3 Months</button>
+                <button onclick="updateChart('1Y')">1 Year</button>
+                <button onclick="updateChart('5Y')">5 Years</button>
+            </div>
+        </div>
+
+        <!-- Stocks List -->
+        <div class="stocks-list" id="stocksList"></div>
+    </div>
+
+    <script src="javaSForIndex.js"></script>
+</body>
+</html>
